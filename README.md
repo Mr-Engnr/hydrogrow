@@ -189,8 +189,7 @@ clones small.
 
 ## Credits
 
-Built by Rana Saad Safdar: hardware, firmware, ML, cloud, backend, dashboard.
-Unity 3D digital twin visualization by .
+Built by Rana Saad Safdar - hardware, firmware, ML, cloud, backend, dashboard.
 
 ## License
 
