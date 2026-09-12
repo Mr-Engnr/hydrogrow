@@ -1,0 +1,370 @@
+/* Modern Footer Styles */
+.footer-modern {
+  background: #1a472a;
+  color: white;
+  margin-top: 0;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Footer Content */
+.footer-content {
+  padding: 50px 0 20px;
+  background: #1a472a;
+}
+
+/* Reset Bootstrap row margins inside footer */
+.footer-content .row {
+  margin-bottom: 0 !important;
+}
+
+.footer-content .row > [class*="col-"] {
+  margin-bottom: 0;
+}
+
+/* Brand Section */
+.footer-brand {
+  padding-right: 30px;
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.brand-logo .logo-icon {
+  font-size: 2.5rem;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.brand-logo h3 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.brand-description {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  opacity: 0.85;
+  margin-bottom: 25px;
+}
+
+/* Social Links */
+.social-links {
+  display: flex;
+  gap: 12px;
+}
+
+.social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.social-link:hover {
+  background: rgba(255,255,255,0.2);
+  transform: translateY(-3px);
+}
+
+.social-link span {
+  font-size: 1.2rem;
+}
+
+.social-link.instagram:hover {
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+}
+
+/* Footer Sections */
+.footer-section {
+  height: 100%;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.footer-section * {
+  background-color: transparent;
+}
+
+.footer-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  position: relative;
+  padding-bottom: 12px;
+}
+
+.footer-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 35px;
+  height: 3px;
+  background: linear-gradient(90deg, #4ade80, #22c55e);
+  border-radius: 2px;
+}
+
+/* Footer Links */
+.footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-links li {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.footer-links li span {
+  font-size: 0.85rem;
+}
+
+.footer-links a {
+  color: white;
+  text-decoration: none;
+  opacity: 0.85;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.footer-links a::before {
+  content: '→';
+  position: absolute;
+  left: -20px;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.footer-links a:hover {
+  opacity: 1;
+  padding-left: 20px;
+  color: #4ade80;
+}
+
+.footer-links a:hover::before {
+  opacity: 1;
+  left: 0;
+}
+
+/* Newsletter */
+.newsletter-text {
+  font-size: 0.9rem;
+  opacity: 0.85;
+  margin-bottom: 15px;
+}
+
+.newsletter-form {
+  display: flex !important;
+  background: rgba(255,255,255,0.1) !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  margin-bottom: 20px !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.newsletter-input {
+  flex: 1 !important;
+  padding: 12px 16px !important;
+  border: none !important;
+  background: transparent !important;
+  color: white !important;
+  font-size: 0.9rem !important;
+  outline: none !important;
+  min-width: 0 !important;
+  box-shadow: none !important;
+}
+
+.newsletter-input:focus {
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.newsletter-input::placeholder {
+  color: rgba(255,255,255,0.5) !important;
+}
+
+.newsletter-btn {
+  padding: 12px 18px !important;
+  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+  border: none !important;
+  color: white !important;
+  font-size: 1.1rem !important;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.newsletter-btn:hover {
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
+}
+
+/* Contact Info in Footer */
+.footer-modern .contact-info {
+  margin-top: 15px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+.footer-modern .contact-info p {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin-bottom: 10px;
+  line-height: 1.4;
+  background: transparent !important;
+}
+
+.footer-modern .contact-info p:last-child {
+  margin-bottom: 0;
+}
+
+.footer-modern .contact-info p span {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* Bottom Bar */
+.footer-bottom {
+  background: #143d23;
+  padding: 8px 0 !important;
+  min-height: auto !important;
+  height: auto !important;
+}
+
+.bottom-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+}
+
+.copyright {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin: 0;
+  padding: 0;
+}
+
+.bottom-links {
+  display: flex;
+  gap: 20px;
+}
+
+.bottom-links a {
+  color: white;
+  text-decoration: none;
+  font-size: 0.8rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.bottom-links a:hover {
+  opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .footer-modern {
+    margin-top: 40px;
+  }
+  
+  .footer-brand {
+    padding-right: 0;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .brand-logo {
+    justify-content: center;
+  }
+  
+  .social-links {
+    justify-content: center;
+  }
+  
+  .footer-title::after {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .footer-section {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .footer-links li {
+    justify-content: center;
+  }
+  
+  .footer-links a:hover {
+    padding-left: 0;
+  }
+  
+  .footer-links a::before {
+    display: none;
+  }
+  
+  .contact-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .contact-info p {
+    justify-content: center;
+    text-align: center;
+  }
+  
+  .newsletter-form {
+    max-width: 300px;
+    margin: 0 auto 20px;
+  }
+}
+
+@media (max-width: 576px) {
+  .footer-content {
+    padding: 40px 0 30px;
+  }
+  
+  .bottom-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .bottom-links {
+    gap: 20px;
+  }
+}

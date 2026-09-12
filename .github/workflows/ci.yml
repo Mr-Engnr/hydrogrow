@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  firmware-tests:
+    runs-on: ubuntu-latest
+    # firmware/tests/*.py are interactive hardware bring-up scripts (import
+    # RPi.GPIO, board, busio, adafruit_dht at module scope and prompt with
+    # input()) meant to run on a Pi with real sensors attached. They aren't
+    # pytest suites and can't execute on a hosted runner, so there's no
+    # hardware-free subset to run yet. This job is non-blocking until real
+    # unit tests exist (e.g. main.py's HydroController with GPIO mocked out).
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Syntax-check hardware-free firmware modules
+        run: python -m py_compile firmware/main.py firmware/inference/nutrient.py
+
+  backend-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install
+      - name: Lint backend
+        working-directory: backend
+        run: npm run lint --if-present
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan for secrets
+        uses: gitleaks/gitleaks-action@v2

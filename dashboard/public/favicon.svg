@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background Circle -->
+  <circle cx="32" cy="32" r="30" fill="#228B22"/>
+  
+  <!-- Water/Hydroponic Base -->
+  <ellipse cx="32" cy="48" rx="16" ry="6" fill="#1a6b1a" opacity="0.6"/>
+  
+  <!-- Plant Stem -->
+  <path d="M32 48 L32 28" stroke="#90EE90" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Left Leaf -->
+  <path d="M32 32 Q22 28 20 18 Q28 22 32 32" fill="#90EE90"/>
+  
+  <!-- Right Leaf -->
+  <path d="M32 28 Q42 24 44 14 Q36 18 32 28" fill="#7CFC00"/>
+  
+  <!-- Small Sprout/New Growth -->
+  <path d="M32 24 Q36 20 38 16" stroke="#ADFF2F" stroke-width="2" stroke-linecap="round" fill="none"/>
+  
+  <!-- Water Drops -->
+  <circle cx="24" cy="50" r="2" fill="#87CEEB" opacity="0.8"/>
+  <circle cx="40" cy="49" r="1.5" fill="#87CEEB" opacity="0.8"/>
+</svg>
