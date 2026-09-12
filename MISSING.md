@@ -25,7 +25,7 @@ Status: RECOVERED / BLOCKED (needs external access) / TODO / LOST
 | mock/replay.py hardware-free mode | firmware/mock/ | TODO | Needs a telemetry sample; none survived |
 | lettuce_mobilenetv2.keras weights | GitHub Release | BLOCKED | Colab runtime output, or Pi |
 | hydrogrow_final_v6.xlsx | ml/nutrient-prediction/data/ | TODO | Was read from /content/ in Colab - re-download from Drive |
-| watertank/environment DTDL JSON | cloud/digital-twin/ | BLOCKED | Ask  (plant_model_v2.json recovered) |
+| watertank/environment DTDL JSON | cloud/digital-twin/ | BLOCKED | Ask collaborator (plant_model_v2.json recovered) |
 | disease_model.tflite + disease_classes.json | cloud/functions/models/ | BLOCKED | Referenced by predict_disease endpoint |
 | Telemetry history (1,758 records) | data/samples/ | LOST | Azure storage disabled |
 | On-Pi latency benchmarks | docs/results.md | BLOCKED | Needs Pi + weights |
@@ -78,4 +78,4 @@ Status: RECOVERED / BLOCKED (needs external access) / TODO / LOST
 - Azure keys: moot, subscription disabled
 - Old web repo git history verified CLEAN (.env and users.json never committed)
 - users.json and .env deliberately excluded from this folder
-- Ask  before publishing Unity/DT visuals
+- Confirm before publishing Unity/DT visuals
