@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this system or reference this work, please cite it as below."
+title: "HydroGrow: An AI + IoT Autonomous Hydroponic Farming System"
+authors:
+  - family-names: "Safdar"
+    given-names: "Rana Saad"
+date-released: 2026-01-01
+url: "https://github.com/<you>/hydrogrow"
+license: Apache-2.0

@@ -1,0 +1,13 @@
+{
+  "@id": "dtmi:hydroponic:plant;2",
+  "@type": "Interface",
+  "displayName": "Plant",
+  "@context": "dtmi:dtdl:context;2",
+  "contents": [
+    {"@type": "Property", "name": "disease_status", "schema": "string"},
+    {"@type": "Property", "name": "disease_confidence", "schema": "double"},
+    {"@type": "Property", "name": "diseased", "schema": "boolean"},
+    {"@type": "Property", "name": "nutrient_status", "schema": "string"},
+    {"@type": "Property", "name": "nutrient_confidence", "schema": "double"}
+  ]
+}

@@ -1,0 +1,21 @@
+# Fixed regions of interest for a single Pi Camera covering 3 plants.
+# Coordinates are (x, y, width, height) in pixels on a 224x224 capture.
+# Update these to match your physical camera framing.
+
+plant1:
+  x: 0
+  y: 0
+  width: 75
+  height: 224
+
+plant2:
+  x: 75
+  y: 0
+  width: 74
+  height: 224
+
+plant3:
+  x: 149
+  y: 0
+  width: 75
+  height: 224

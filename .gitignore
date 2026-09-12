@@ -1,0 +1,57 @@
+# Secrets - never commit these
+.env
+.env.local
+.env.*.local
+firmware/config/settings.yaml
+cloud/functions/local.settings.json
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.ipynb_checkpoints/
+
+# Node
+node_modules/
+build/
+dist/
+.npm/
+npm-debug.log*
+
+# Model weights - shipped via GitHub Releases, not committed
+*.h5
+*.pth
+*.onnx
+!ml/nutrient-prediction/models/nutrient_model.pkl
+
+# Raw source footage - too large for a normal git push (>100MB GitHub limit),
+# and not referenced by any doc; the derived media/hero/demo.gif is what ships.
+media/IMG_5325.MOV
+
+# Captures and runtime data
+firmware/captures/
+*.jpg
+*.jpeg
+*.png
+!media/**
+!ml/**/reports/**
+!docs/**
+!dashboard/public/**
+!dashboard/src/assets/**
+
+# App runtime state (never persistent on Azure Free tier anyway)
+users.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
+# Claude Code local session state
+.claude/

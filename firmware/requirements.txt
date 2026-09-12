@@ -1,0 +1,17 @@
+# Raspberry Pi control loop dependencies
+RPi.GPIO>=0.7.1
+adafruit-blinka>=8.0.0
+adafruit-circuitpython-ads1x15>=2.2.0
+adafruit-circuitpython-dht>=4.0.0
+luma.oled>=3.12.0
+smbus2>=0.4.0
+joblib>=1.3.0
+numpy>=1.24.0
+scikit-learn==1.8.0
+picamera2>=0.3.0
+azure-iot-device>=2.12.0
+PyYAML>=6.0
+
+# Note: scikit-learn is pinned. nutrient_model.pkl was serialized with 1.8.0;
+# loading it under a different minor version emits a version warning and can
+# silently change predictions.

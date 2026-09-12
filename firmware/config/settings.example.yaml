@@ -1,0 +1,47 @@
+# Copy to settings.yaml on the Pi. Never commit settings.yaml.
+
+pins:
+  ph_adc_channel: 3          # ADS1115 A3
+  ec_adc_channel: 1          # ADS1115 A1
+  dht22_gpio: 4
+  ultrasonic_trig_gpio: 23
+  ultrasonic_echo_gpio: 24
+  relay_pump_a_gpio: 17      # Nutrient A (macro/NPK)
+  relay_pump_b_gpio: 27      # Nutrient B (micro/CalMag blend)
+  relay_pump_c_gpio: 22      # Water top-up
+
+i2c:
+  ads1115_address: 0x48
+  oled_address: 0x3c
+
+calibration:
+  ph_offset: 0.0             # single-point offset correction
+  ec_temp_coefficient: 0.02  # per degree C from 25C reference
+
+thresholds:
+  ec_min_mS_cm: 1.2
+  ec_max_mS_cm: 2.4
+  water_level_min_pct: 20
+  water_level_max_pct: 90
+
+growth:
+  planting_date: "2026-06-01"
+  phases:
+    germination: [1, 7]
+    seedling: [8, 14]
+    vegetative: [15, 35]
+    mature: [36, 52]
+    harvest_ready: [53, 60]
+  harvest_flush_day: 37
+  model_day_multiplier: 1.5   # get_model_day = clamp(round(actual_day * 1.5), 1, 60)
+
+dosing:
+  nutrient_b_blend_multiplier: 1.25  # 4:1 B+CalMag blend requires 1.25x on B targets
+  nutrient_b_interval_hours: 24
+
+camera:
+  capture_interval_sec: 10
+  image_size: [224, 224]
+
+sampling:
+  sensor_interval_sec: 15
