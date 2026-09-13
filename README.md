@@ -114,7 +114,8 @@ training hardware; on-device Pi figures pending measurement.
 ## Hardware
 
 ![Assembled rig](media/hardware/rig-annotated.jpg)
-<!-- PENDING: from Labeled.png, Cowork pass 2 -->
+
+![Perfboard and pump wiring](media/hardware/wiring-detail.jpg)
 
 Full BOM, pinout, and the wiring lessons (relay drive current, ultrasonic
 inversion, ECHO divider): [docs/hardware.md](docs/hardware.md)
@@ -124,6 +125,12 @@ inversion, ECHO divider): [docs/hardware.md](docs/hardware.md)
 ![Dashboard plant health view](media/dashboard/plant-health.jpg)
 
 Live sensor cards and alerting, viewed mid-grow-cycle.
+
+## Digital Twin
+
+![Unity digital twin view](media/twin/twin-view.jpg)
+
+Per-plant disease and nutrient status over live tank telemetry, mid-session.
 
 ## Quickstart
 

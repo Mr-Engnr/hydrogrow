@@ -28,10 +28,6 @@ npm-debug.log*
 *.onnx
 !ml/nutrient-prediction/models/nutrient_model.pkl
 
-# Raw source footage - too large for a normal git push (>100MB GitHub limit),
-# and not referenced by any doc; the derived media/hero/demo.gif is what ships.
-media/IMG_5325.MOV
-
 # Captures and runtime data
 firmware/captures/
 *.jpg
@@ -42,6 +38,11 @@ firmware/captures/
 !docs/**
 !dashboard/public/**
 !dashboard/src/assets/**
+
+# Raw source footage - too large for a normal git push (>100MB GitHub limit),
+# and not referenced by any doc; the derived media/hero/demo.gif is what ships.
+# Must come after the !media/** re-inclusion above, or that negation wins.
+media/IMG_5325.MOV
 
 # App runtime state (never persistent on Azure Free tier anyway)
 users.json
