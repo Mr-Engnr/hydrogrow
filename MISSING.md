@@ -45,9 +45,9 @@ Status: RECOVERED / BLOCKED (needs external access) / TODO / LOST
 |---|---|
 | Dashboard plant-health screenshot | TODO - run dashboard locally, screenshot |
 | Dashboard live-view screenshot | TODO - same session |
-| Perfboard top-down macro | BLOCKED - needs rig |
-| Pumps dosing clip | BLOCKED - needs rig |
-| Growth cycle strip | DEFERRED - roadmap item |
+| Perfboard top-down macro | RESOLVED - not top-down, but media/hardware/wiring-detail.jpg covers it, wired into README |
+| Pumps dosing clip | RESOLVED - not a video clip, but media/hardware/wiring-detail.jpg shows the pumps, wired into README |
+| Growth cycle strip | DEFERRED - roadmap item, no timeline/series material exists in media/ |
 | Hero demo GIF (IMG_5325.MOV 00:04-00:20) | TODO - Cowork pass 2 |
 | Unity twin GIF (IMG_5325.MOV 00:12-00:20) | TODO - Cowork pass 2 |
 | rig-annotated (Labeled.png) | TODO - crop caption |
