@@ -170,7 +170,8 @@ Dashboard on http://localhost:3000, API on :8080.
 ## Known limits
 
 - Nutrient model trains on simulated data. See the note in Results.
-- Auth is JWT with a file-backed user store: single-operator grade, not multi-tenant.
+- Auth is random opaque bearer tokens stored server-side, with a file-backed
+  user store: single-operator grade, not multi-tenant.
 - Dosing is time-based; accuracy depends on pump flow staying stable.
 - The original Azure deployment ran on a now-retired subscription. Everything is
   reproducible from cloud/infra/ on any subscription; media/ shows the system live.
