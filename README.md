@@ -17,7 +17,7 @@ Built, wired, calibrated, and run through a full 40-day grow cycle.
 ## What it does
 
 - **Senses.** Five sensor channels through an ADS1115 ADC and Pi GPIO, sampled on a 15 second loop.
-- **Decides.** A GradientBoosting classifier maps live sensor state to a nutrient
+- **Decides.** A Random Forest classifier maps live sensor state to a nutrient
   deficiency class. A MobileNetV2 classifier scores three plant regions from a single
   camera frame for bacterial infection and Septoria blight.
 - **Acts.** Three peristaltic pumps dose macronutrients, micronutrients, and water.
@@ -79,11 +79,15 @@ features. Stratified 80/20 split, 48-sample test set.
 
 | Model | Accuracy | Weighted F1 |
 |---|---|---|
-| Gradient Boosting (shipped) | 97.92% | 0.9788 |
-| Random Forest | 97.92% | 0.9788 |
+| Random Forest (shipped) | 97.92% | 0.9788 |
+| Gradient Boosting | 97.92% | 0.9788 |
 | SVM (RBF) | 97.92% | 0.9788 |
 | Decision Tree | 95.83% | 0.9583 |
 | KNN | 89.58% | 0.8932 |
+
+The deployed model is a 100-tree Random Forest on 10 features (pH, EC, estimated
+N/P/K, air temperature, humidity, water level, growth day, treatment %). The
+table above comes from a comparison run on a closely related feature set.
 
 Per-class on the shipped model: Healthy 1.00 F1, Phosphorus 1.00, Potassium 0.94,
 Nitrogen 0.91. Nitrogen recall (0.83) is the weak point, one of six nitrogen
