@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const bcrypt = require('bcrypt');
+
+const SALT_ROUNDS = 10;
 
 const USERS_FILE = path.join(__dirname, '../data/users.json');
 
@@ -30,7 +33,11 @@ class AuthService {
   }
 
   hashPassword(password) {
-    return crypto.createHash('sha256').update(password).digest('hex');
+    return bcrypt.hash(password, SALT_ROUNDS);
+  }
+
+  verifyPassword(password, hash) {
+    return bcrypt.compare(password, hash);
   }
 
   generateToken() {
@@ -68,7 +75,7 @@ class AuthService {
     const newUser = {
       id: crypto.randomUUID(),
       email: email.toLowerCase(),
-      password: this.hashPassword(password),
+      password: await this.hashPassword(password),
       name: name.trim(),
       token: null,
       createdAt: new Date().toISOString()
@@ -92,7 +99,7 @@ class AuthService {
       return { success: false, message: 'Invalid email or password' };
     }
 
-    if (user.password !== this.hashPassword(password)) {
+    if (!(await this.verifyPassword(password, user.password))) {
       return { success: false, message: 'Invalid email or password' };
     }
 

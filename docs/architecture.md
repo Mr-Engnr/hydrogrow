@@ -35,7 +35,7 @@ The proxy exists because calling the Function directly from the browser hit CORS
 | Processing | Azure Functions | Event-triggered blob persistence, HTTP analytics aggregation |
 | Storage | Blob Storage | One timestamped JSON per reading |
 | Twin | Azure Digital Twins | Live graph: water tank, environment, per-plant state |
-| API | Node 20 + Express | Serves SPA, /pidata latest-reading endpoint, analytics proxy, JWT auth |
+| API | Node 20 + Express | Serves SPA, /pidata latest-reading endpoint, analytics proxy, token auth |
 | UI | React | Live cards, trend charts, per-plant health with confidence bars |
 | Visualization | Unity 3D | Reads Digital Twins graph, mirrors rig state in 3D |
 
