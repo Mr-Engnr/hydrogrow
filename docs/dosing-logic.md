@@ -4,7 +4,7 @@ How HydroGrow decides when and how much to feed.
 
 ## Two independent dosing paths
 
-**Nutrient A (macro / NPK)** is model-driven. The GradientBoosting classifier maps
+**Nutrient A (macro / NPK)** is model-driven. The Random Forest classifier maps
 live sensor state to a deficiency class. Dosing fires only when:
 
 1. The model predicts a deficiency with confidence >= 70%
