@@ -54,5 +54,6 @@ Thumbs.db
 .idea/
 *.log
 
-# Claude Code local session state
+# Local tool session state
 .claude/
+.codex/

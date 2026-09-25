@@ -1,13 +1,4 @@
-.PHONY: models test dashboard-up dashboard-down clean
-
-REPO := <you>/hydrogrow
-RELEASE := v1.0.0
-
-# Download model weights from the GitHub Release instead of committing them.
-models:
-	mkdir -p ml/disease-detection/models
-	curl -L -o ml/disease-detection/models/lettuce_mobilenetv2.h5 \
-	  https://github.com/$(REPO)/releases/download/$(RELEASE)/lettuce_mobilenetv2.h5
+.PHONY: test dashboard-up dashboard-down clean
 
 test:
 	pytest firmware/tests/ -v
