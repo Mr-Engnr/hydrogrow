@@ -66,4 +66,3 @@ Azure subscription. Dashboard screenshots and the demo video in `media/` show th
 system during its live deployment.
 
 ![Architecture diagram](../media/diagrams/architecture.png)
-<!-- PENDING: architecture.png redraw in Excalidraw/draw.io, light background -->

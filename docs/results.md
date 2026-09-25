@@ -1,7 +1,7 @@
 # Results
 
-PENDING: every table here regenerates from scripts once model files are
-recovered. Placeholder markers [MEASURE] in the README map to this file.
+On-device latency benchmarks are not yet recorded (tracked in the Roadmap).
+Every table below regenerates from scripts once model files are recovered.
 
 Regeneration commands (once files exist):
 - Nutrient: run ml/nutrient-prediction/src/pipeline.py -> reports/metrics.json + confusion_matrix.png

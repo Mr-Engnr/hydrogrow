@@ -53,7 +53,7 @@ rewiring sessions on the perfboard.
 
 ## Diagrams
 
-![Wiring schematic](../media/diagrams/wiring-schematic.png)
-
-<!-- PENDING: wiring-schematic.png not yet drawn. Fritzing or KiCad export.
-     Must show the ECHO divider and the relay transistor buffer. -->
+A wiring schematic (Fritzing/KiCad, covering the ECHO divider and the relay
+transistor buffer) has not been drawn yet. See
+[media/hardware/wiring-detail.jpg](../media/hardware/wiring-detail.jpg) for a
+photo of the actual perfboard wiring in the meantime.

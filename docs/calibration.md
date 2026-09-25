@@ -28,8 +28,8 @@ for decisions, because conversion-factor inconsistencies between scales (0.5 vs
 Temperature compensation: readings normalize to 25 C using a 2%/degree
 coefficient (`calibration.ec_temp_coefficient`).
 
-Status: <!-- PENDING: EC probe needs calibration against a reference solution
-(1.413 mS/cm standard). Record raw voltage vs reference, set scale factor. -->
+Status: not yet calibrated against a reference solution (1.413 mS/cm standard).
+Still needed: record raw voltage vs reference, set the scale factor.
 
 ## DHT22
 
