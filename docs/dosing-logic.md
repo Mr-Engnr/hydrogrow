@@ -62,7 +62,7 @@ runtime_sec = dose_mL / flow_rate_mL_per_sec
 Flow rate comes from a 10-second calibration: run the pump into a measuring
 container for 10s, divide collected mL by 10.
 
-<!-- PENDING: measured flow rates per pump not yet recorded. -->
+Measured flow rates per pump are not yet recorded.
 
 ## Safety behavior observed in production
 
