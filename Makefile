@@ -1,4 +1,4 @@
-.PHONY: models mock test dashboard-up dashboard-down clean
+.PHONY: models test dashboard-up dashboard-down clean
 
 REPO := <you>/hydrogrow
 RELEASE := v1.0.0
@@ -8,10 +8,6 @@ models:
 	mkdir -p ml/disease-detection/models
 	curl -L -o ml/disease-detection/models/lettuce_mobilenetv2.h5 \
 	  https://github.com/$(REPO)/releases/download/$(RELEASE)/lettuce_mobilenetv2.h5
-
-# Run the firmware control loop with no hardware, replaying sample telemetry.
-mock:
-	python -m firmware.main --mock --speed 60x
 
 test:
 	pytest firmware/tests/ -v

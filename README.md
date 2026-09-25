@@ -99,8 +99,7 @@ dataset assumptions: [ml/nutrient-prediction/](ml/nutrient-prediction/)
 
 ### On-device performance
 
-Disease model inference measured at ~800 ms/step during batch evaluation on
-training hardware; on-device Pi figures pending measurement.
+Not yet measured on the Pi; see the Roadmap.
 
 ## Hardware
 
@@ -125,15 +124,16 @@ Per-plant disease and nutrient status over live tank telemetry, mid-session.
 
 ## Quickstart
 
-### Run the control loop with no hardware
+### Run on a Raspberry Pi
 
 ```bash
-git clone https://github.com/<you>/hydrogrow.git
+git clone https://github.com/Mr-Engnr/hydrogrow.git
 cd hydrogrow
 python -m venv .venv && source .venv/bin/activate
 pip install -r firmware/requirements.txt
 cp firmware/config/settings.example.yaml firmware/config/settings.yaml
-python -m firmware.main --mock --speed 60x
+python firmware/tests/test_hardware_full.py  # bring-up: verify each sensor/pump
+python firmware/main.py
 ```
 
 ### Run the dashboard and API
@@ -150,7 +150,7 @@ Dashboard on http://localhost:3000, API on :8080.
 | Path | What lives here |
 |---|---|
 | firmware/ | Pi control loop, sensor drivers, dosing logic, on-device inference |
-| ml/ | Training notebooks, evaluation scripts, metrics, latency benchmarks |
+| ml/ | Training notebooks, trained nutrient model |
 | cloud/ | Azure Functions, Digital Twin models, provisioning scripts |
 | backend/ | Express API and static host |
 | dashboard/ | React SPA |
@@ -159,6 +159,7 @@ Dashboard on http://localhost:3000, API on :8080.
 
 ## Roadmap
 
+- [ ] Hardware-free mock mode for the control loop
 - [ ] On-device latency benchmarks on Raspberry Pi
 - [ ] Growth-cycle photo timeline from the next grow run
 - [ ] Two-point pH calibration on a scheduled cadence, drift logged as telemetry
@@ -174,7 +175,8 @@ Dashboard on http://localhost:3000, API on :8080.
   user store: single-operator grade, not multi-tenant.
 - Dosing is time-based; accuracy depends on pump flow staying stable.
 - The original Azure deployment ran on a now-retired subscription. Everything is
-  reproducible from cloud/infra/ on any subscription; media/ shows the system live.
+  reproducible on any subscription following the runbook in
+  [docs/deployment.md](docs/deployment.md); media/ shows the system live.
 
 ## Credits
 
