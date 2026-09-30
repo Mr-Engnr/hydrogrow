@@ -8,7 +8,7 @@ predicts nutrient deficiency from sensor state. The Pi acts on those predictions
 by firing dosing pumps, then streams everything to Azure IoT Hub, a Digital Twin,
 and a live dashboard.
 
-Built, wired, calibrated, and run through a full 40-day grow cycle.
+Built, wired, calibrated, and run on a live grow.
 
 [Architecture](docs/architecture.md) · [Results](docs/results.md) · [Hardware](docs/hardware.md) · [Dosing logic](docs/dosing-logic.md)
 
