@@ -7,49 +7,80 @@ decisions, OLED status, and telemetry publishing.
 
 | Path | Purpose |
 |---|---|
-| `main.py` | Full control loop. Contains `SensorReader`, `PumpController`, `Display`, `HydroController` |
-| `inference/nutrient.py` | Loads the GradientBoosting model, derives NPK estimates, returns label + confidence |
+| `main.py` | v2.0 control loop, 30-min supervisory cycle: sensors + camera, water-level control, Nutrient A dosing (Random Forest), scheduled Nutrient B, MobileNetV2 disease check, IoT Hub publish with disk buffer, OLED status |
+| `inference/nutrient.py` | Loads the Random Forest model, derives NPK estimates, returns label + confidence |
 | `config/settings.example.yaml` | Pins, thresholds, calibration, growth phases |
 | `config/crop_boxes.yaml` | Per-plant camera ROI boxes for the 3-plant single-camera setup |
 | `tests/test_hardware_basic.py` | Quick relay + pH + TDS sanity check |
-| `tests/test_hardware_full.py` | 10-stage interactive bring-up: I2C scan, OLED, ADS1115, pH, TDS, DHT22, HC-SR04, all three pumps |
+| `tests/test_hardware_full.py` | 11-stage interactive bring-up: I2C scan, OLED, ADS1115, pH, TDS, DHT22, HC-SR04, all three pumps, Pi Camera capture |
+| `tests/test_sensors.py` | pH + EC readout mirrored to the OLED |
+| `tests/camera_test.py` | Pi Camera capture + MobileNetV2 disease prediction |
 
 ## Control loop timing
 
 | Task | Interval |
 |---|---|
-| Sensor read | 15 s |
-| Control decision | 120 s |
-| OLED refresh | 5 s |
-| JSON log write | 60 s |
+| Supervisory cycle (sensors, camera, ML, dosing, water, publish, OLED) | 30 min (`LOOP_INTERVAL = 1800`) |
+| Water pump poll while filling | 1 s |
+| Water pump continuous-run cap | 300 s (`PUMP_TIMEOUT`) |
+| OLED status rotation (pH, temp/humidity, water) | ~12.5 s, once per cycle |
 
-Decisions run on a slower cadence than reads deliberately. Dosing changes take
-time to mix and register; acting on every 15-second sample would chase noise and
-overshoot.
+Each cycle runs in a fixed order: acquire, validate, growth-day mapping, disease
+check, nutrient prediction, Nutrient A, Nutrient B, water top-up, publish, OLED.
+Nutrients are dosed before water so the top-up absorbs the added volume instead of
+overfilling. Failed IoT Hub publishes are buffered to `$HYDROGROW_DATA_DIR/buffer/`.
 
-## Dosing safety rails
+## Dosing rules
 
-Defined in the `DOSE` config block:
+**Nutrient A (macros, Pump B)** is model-driven. It fires only when all hold:
 
-| Rail | Value | Why |
-|---|---|---|
-| `min_gap_sec` | 300 | No pump fires twice within 5 minutes |
-| `max_per_hour` | 4 | Hard ceiling per pump per hour |
-| `post_wait_sec` | 90 | Wait after dosing before trusting a new reading |
-| `ab_gap_sec` | 5 | Separate A and B doses so they mix rather than react in the line |
+- EC < 1.2 mS/cm
+- the Random Forest predicts a deficiency (label is not `Healthy`)
+- model confidence >= 70% (`DOSE_MIN_CONFIDENCE`)
 
-`post_wait_sec` is the one that matters most. Reading EC immediately after a dose
-gives a reading from unmixed solution near the sensor, which drives a second dose,
-which drives a third. The wait breaks that runaway loop.
+EC >= 1.8 is a hard cutoff and never doses. Burst length scales with how low EC is:
+2 s (1.1 to 1.2), 3 s (0.8 to 1.1), 4 s (below 0.8, hard ceiling).
+
+**Nutrient B (micros + CalMag blend, Pump C)** is schedule-driven, since the model
+only detects N/P/K deficiencies. Every 24 h it tops up 10% of the remaining gap
+toward a per-phase target for the 16 L reservoir, capped at 30 s per burst:
+
+| Phase | Target (mL) |
+|---|---|
+| Germination | 0 |
+| Seedling | 50 |
+| Vegetative | 100 |
+| Mature | 140 |
+| Harvest Ready | 0 |
+
+The bottle is 400 mL pure B + 100 mL CalMag, so targets are scaled x1.25 versus
+pure-B values. Dosed volume is persisted in `nutrient_b_state.json` and resets when
+the phase changes. `PUMP_FLOW_ML_S` (1.0 mL/s) is a placeholder: measure your pump.
+
+**Harvest flush:** from real day 37 onward, all nutrient dosing stops.
+
+## Growth-day mapping (40 to 60 days)
+
+Real lettuce reaches harvest in about 40 days, but the nutrient model was trained
+on a 60-day lifecycle. The loop tracks the real day from `PLANTING_DATE` (set this
+to your sow date in `main.py`) and scales it for the model:
+`model_day = round(actual_day * 1.5)`, clamped to 1..60. Phases on the model scale:
+Germination 1-7, Seedling 8-14, Vegetative 15-35, Mature 36-52, Harvest Ready 53-60.
 
 ## Lettuce targets
 
-pH 5.5 to 6.5 (ideal 6.0), EC 0.8 to 2.0 mS/cm (ideal 1.4), air 15 to 26 C,
-humidity 40 to 80%.
+pH 5.5 to 6.5, EC 1.2 to 1.8 mS/cm (below 1.2 is depletion, above 1.8 is burn risk).
 
 Water level uses HC-SR04 distance from sensor down to the water surface, so
-**smaller distance means more water**: 3 cm is full, 12 cm triggers top-up, 20 cm
-is critical, 30 cm is an empty tank. Every threshold reads inverted from intuition.
+**smaller distance means more water**:
+
+| Distance | Meaning |
+|---|---|
+| >= 3.0 cm | Water low, pump ON |
+| 2.0 cm | Fill target, pump OFF |
+| < 1.5 cm | Overfill fault |
+
+Empty-box baseline is 11.8 cm (`TOTAL_BOX_DEPTH`); level % is derived from it.
 
 ## Running
 
@@ -61,13 +92,21 @@ pip install -r firmware/requirements.txt
 python firmware/main.py
 ```
 
-Paths default to the home directory and are overridable:
+Environment variables:
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `IOTHUB_CONNECTION_STRING` | Yes | Azure IoT Hub device connection string. Startup fails without it. |
+| `HYDROGROW_DATA_DIR` | No (default `~`) | Root for `models/`, `captures/`, `buffer/` and `nutrient_b_state.json` |
 
 ```bash
+export IOTHUB_CONNECTION_STRING="<device connection string from Azure portal>"
 export HYDROGROW_DATA_DIR=/var/lib/hydrogrow
-export NUTRIENT_MODEL_PATH=/opt/models/nutrient_model.pkl
-export IOTHUB_CONNECTION_STRING="HostName=...;DeviceId=...;SharedAccessKey=..."
 ```
+
+Models are loaded from `$HYDROGROW_DATA_DIR/models/`: `nutrient_model.pkl` and
+`lettuce_mobilenetv2.h5`. If either fails to load, that prediction is disabled and
+the loop keeps running.
 
 Hardware bring-up before first run:
 
@@ -83,6 +122,3 @@ python firmware/tests/test_hardware_full.py
 - EC is uncalibrated against a reference solution. Readings are directionally
   useful but absolute values should not be trusted for reporting.
 - pH uses single-point calibration: offset is corrected, slope is not.
-
-<!-- PENDING: camera/disease inference module and the IoT Hub publisher are not
-     yet in this folder. See ../MISSING.md. -->
