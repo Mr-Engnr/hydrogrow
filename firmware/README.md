@@ -106,7 +106,15 @@ export HYDROGROW_DATA_DIR=/var/lib/hydrogrow
 
 Models are loaded from `$HYDROGROW_DATA_DIR/models/`: `nutrient_model.pkl` and
 `lettuce_mobilenetv2.h5`. If either fails to load, that prediction is disabled and
-the loop keeps running.
+the loop keeps running. The disease model ships as a release asset; the nutrient
+model is in the repo:
+
+```bash
+mkdir -p "$HYDROGROW_DATA_DIR/models"
+curl -L -o "$HYDROGROW_DATA_DIR/models/lettuce_mobilenetv2.h5" \
+  https://github.com/Mr-Engnr/hydrogrow/releases/download/v1.0.0/lettuce_mobilenetv2.h5
+cp ml/nutrient-prediction/models/nutrient_model.pkl "$HYDROGROW_DATA_DIR/models/"
+```
 
 Hardware bring-up before first run:
 

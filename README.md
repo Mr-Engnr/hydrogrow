@@ -140,6 +140,8 @@ python firmware/tests/test_hardware_full.py  # bring-up: verify each sensor/pump
 python firmware/main.py
 ```
 
+Model weights: download the disease model from the [v1.0.0 release](https://github.com/Mr-Engnr/hydrogrow/releases/tag/v1.0.0); see [firmware/README.md](firmware/README.md#running) for the curl command.
+
 ### Run the dashboard and API
 
 ```bash
