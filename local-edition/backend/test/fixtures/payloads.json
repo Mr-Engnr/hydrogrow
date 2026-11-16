@@ -1,0 +1,65 @@
+{
+  "normal": {
+    "temperature": 24.3, "humidity": 61.2, "pH": 6.12, "ec": 1.456, "tds": 728.0,
+    "water_level": 2.4, "water_level_cm": 9.4, "water_level_pct": 79.7, "water_low": false,
+    "timestamp": "2026-06-18T09:00:12.481233+00:00",
+    "growth_day_actual": 18, "growth_day_model": 27, "growth_phase": "Vegetative", "harvest_flush": false,
+    "image": "20260618_090010.jpg", "status": "ok",
+    "disease_predictions": {
+      "plant1": { "label": "Healthy", "confidence": 0.9731 },
+      "plant2": { "label": "Healthy", "confidence": 0.9512 },
+      "plant3": null
+    },
+    "nutrient_status": { "label": "Healthy", "confidence": 96.4 },
+    "dosing": {
+      "nutrient_a": { "dosed": false, "reason": "EC 1.456 in range (>= 1.2); no dose needed", "burst_s": 0, "ec": 1.456, "label": null, "confidence": null },
+      "nutrient_b": { "dosed": false, "reason": "next Nutrient B in 17.9h", "burst_s": 0, "phase": "Vegetative", "target_ml": 100.0, "dosed_ml": 41.0 }
+    }
+  },
+  "diseased": {
+    "temperature": 25.1, "humidity": 58.9, "pH": 5.84, "ec": 1.112, "tds": 556.0,
+    "water_level": 2.9, "water_level_cm": 8.9, "water_level_pct": 75.4, "water_low": false,
+    "timestamp": "2026-06-19T14:30:02.000111+00:00",
+    "growth_day_actual": 19, "growth_day_model": 29, "growth_phase": "Vegetative", "harvest_flush": false,
+    "image": "20260619_143000.jpg", "status": "ok",
+    "disease_predictions": {
+      "plant1": { "label": "Healthy", "confidence": 0.9902 },
+      "plant2": { "label": "Bacterial", "confidence": 0.8812 },
+      "plant3": null
+    },
+    "nutrient_status": { "label": "Nitrogen_Deficient", "confidence": 81.7 },
+    "dosing": {
+      "nutrient_a": { "dosed": true, "reason": "dosed 2s (EC 1.112, Nitrogen_Deficient @ 81.7%)", "burst_s": 2, "ec": 1.112, "label": "Nitrogen_Deficient", "confidence": 81.7 },
+      "nutrient_b": { "dosed": true, "reason": "topped up 5.9s (5.9 mL)", "burst_s": 5.9, "phase": "Vegetative", "target_ml": 100.0, "dosed_ml": 46.9 }
+    }
+  },
+  "error_frame": {
+    "temperature": null, "humidity": null, "pH": 6.05, "ec": 1.401, "tds": 700.5,
+    "water_level": 25.1, "water_level_cm": 0.0, "water_level_pct": 0.0, "water_low": true,
+    "timestamp": "2026-06-18T09:30:11.002911+00:00",
+    "image": "20260618_093009.jpg", "status": "validation failed",
+    "disease_predictions": { "plant1": null, "plant2": null, "plant3": null },
+    "nutrient_status": null, "dosing": null
+  },
+  "flaky_dht": {
+    "temperature": null, "humidity": null, "pH": 6.2, "ec": 1.5, "tds": 750.0,
+    "water_level": 2.2, "water_level_cm": 9.6, "water_level_pct": 81.4, "water_low": false,
+    "timestamp": "2026-06-18T10:00:00.000000+00:00",
+    "growth_day_actual": 18, "growth_day_model": 27, "growth_phase": "Vegetative", "harvest_flush": false,
+    "image": "20260618_100000.jpg", "status": "ok",
+    "disease_predictions": {
+      "plant1": { "label": "Healthy", "confidence": 0.97 },
+      "plant2": { "label": "Healthy", "confidence": 0.96 },
+      "plant3": null
+    },
+    "nutrient_status": null,
+    "dosing": {
+      "nutrient_a": { "dosed": false, "reason": "EC 1.5 in range (>= 1.2); no dose needed", "burst_s": 0, "ec": 1.5, "label": null, "confidence": null },
+      "nutrient_b": { "dosed": false, "reason": "next Nutrient B in 12.0h", "burst_s": 0, "phase": "Vegetative", "target_ml": 100.0, "dosed_ml": 41.0 }
+    }
+  },
+  "legacy_lowercase_ph": {
+    "temperature": 23.0, "humidity": 55.0, "ph": 6.5, "ec": 1.3, "waterLevel": 2.5,
+    "timestamp": "2026-06-18T10:05:00+00:00", "status": "ok"
+  }
+}
