@@ -1,0 +1,27 @@
+[Unit]
+Description=HydroGrow public URL (optional Cloudflare named tunnel)
+# Fully optional. Nothing depends on this unit, so it can never block boot or the local stack.
+# It is skipped entirely when no token file exists.
+ConditionPathExists=/etc/hydrogrow/cloudflared.env
+After=network-online.target hydrogrow-backend.service
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/hydrogrow/cloudflared.env
+# Wait (only this unit) until the internet is actually reachable; no timeout, no failure.
+ExecStartPre=/bin/sh -c 'until curl -fsI -m 5 https://www.cloudflare.com >/dev/null 2>&1; do sleep 15; done'
+TimeoutStartSec=infinity
+ExecStart=/usr/local/bin/cloudflared tunnel --no-autoupdate --metrics 127.0.0.1:20241 run --token ${TUNNEL_TOKEN}
+Restart=always
+RestartSec=30
+# the tunnel only needs to reach the local backend; keep it unprivileged
+User=nobody
+Group=nogroup
+NoNewPrivileges=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

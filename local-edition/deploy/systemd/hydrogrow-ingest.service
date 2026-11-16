@@ -1,0 +1,25 @@
+[Unit]
+Description=HydroGrow ingest (MQTT -> SQLite + twin state)
+Documentation=file:@APP_DIR@/docs/ARCHITECTURE.md
+# Talks to the broker on localhost only; no network-online wait.
+After=mosquitto.service
+Wants=mosquitto.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=@APP_USER@
+Group=@APP_USER@
+WorkingDirectory=@APP_DIR@/ingest
+EnvironmentFile=/etc/hydrogrow/hydrogrow.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=@VENV@/bin/python ingest.py
+Restart=always
+RestartSec=3
+TimeoutStopSec=15
+# journald keeps the logs: journalctl -u hydrogrow-ingest -f
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

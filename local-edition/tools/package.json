@@ -1,0 +1,13 @@
+{
+  "name": "hydrogrow-local-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Laptop-only helpers: dev MQTT broker stand-in for Mosquitto",
+  "scripts": {
+    "broker": "node dev_broker.js"
+  },
+  "dependencies": {
+    "aedes": "^0.51.3",
+    "websocket-stream": "^5.5.2"
+  }
+}

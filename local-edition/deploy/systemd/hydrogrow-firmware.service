@@ -1,0 +1,31 @@
+[Unit]
+Description=HydroGrow firmware (sensors, ML, dosing, MQTT publish)
+Documentation=file:@FIRMWARE_DIR@/README.md
+# ORDERING ONLY (After=, no Wants=/Requires= on time-sync): with no internet or NTP
+# the unit still starts as soon as mosquitto is up; main.py logs a clock warning and
+# publishes status=clock_unsynced until the clock syncs. Never add
+# systemd-time-wait-sync here: it would hold time-sync.target (and this unit) forever offline.
+# No network-online dependency: the broker is on localhost.
+After=time-sync.target mosquitto.service
+Wants=mosquitto.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=@APP_USER@
+Group=@APP_USER@
+WorkingDirectory=@FIRMWARE_DIR@
+EnvironmentFile=/etc/hydrogrow/hydrogrow.env
+Environment=PYTHONUNBUFFERED=1
+# Same interpreter the firmware already used by hand (TensorFlow, picamera2 live here).
+ExecStart=@VENV@/bin/python -u main.py
+# main.py turns relays off in its own cleanup; give TensorFlow time to unload.
+KillSignal=SIGINT
+TimeoutStopSec=30
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
