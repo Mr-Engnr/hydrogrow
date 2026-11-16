@@ -9,7 +9,10 @@ joblib>=1.3.0
 numpy>=1.24.0
 scikit-learn==1.8.0
 picamera2>=0.3.0
-azure-iot-device>=2.12.0
+# Telemetry transport (HYDROGROW_TRANSPORT): mqtt is the default
+paho-mqtt>=2.1.0,<3
+# only for HYDROGROW_TRANSPORT=azure (retired cloud edition):
+# azure-iot-device>=2.12.0
 PyYAML>=6.0
 
 # Note: scikit-learn is pinned. nutrient_model.pkl was serialized with 1.8.0;
