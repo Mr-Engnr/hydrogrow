@@ -1,0 +1,24 @@
+[Unit]
+Description=HydroGrow backend (Express API + dashboard on :8080)
+Documentation=file:@APP_DIR@/docs/ARCHITECTURE.md
+# Binds 0.0.0.0:8080; does not need network-online (would only delay boot when offline).
+After=hydrogrow-ingest.service
+Wants=hydrogrow-ingest.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=@APP_USER@
+Group=@APP_USER@
+WorkingDirectory=@APP_DIR@/backend
+EnvironmentFile=/etc/hydrogrow/hydrogrow.env
+Environment=NODE_ENV=production
+ExecStart=@NODE@ src/server.js
+Restart=always
+RestartSec=3
+TimeoutStopSec=15
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
