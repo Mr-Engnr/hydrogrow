@@ -4,7 +4,8 @@ HydroGrow - Production Control Loop (v2.0)
 ==========================================
 30-minute supervisory loop:
   acquire sensors + camera -> validate -> closed-loop water control
-  -> publish to Azure IoT Hub -> rotate OLED status -> sleep
+  -> publish telemetry (MQTT or Azure IoT Hub, see HYDROGROW_TRANSPORT)
+  -> rotate OLED status -> sleep
 
 Hardware (validated wiring):
   ADS1115  I2C 0x48 : pH=A3 (5V probe), EC/TDS=A1 (3.3V probe)
@@ -41,13 +42,30 @@ from PIL import ImageDraw, ImageFont
 # Camera
 from picamera2 import Picamera2
 
-# Azure IoT
-from azure.iot.device import IoTHubDeviceClient, Message
+# Telemetry transport, chosen by HYDROGROW_TRANSPORT:
+#   mqtt  (default) local broker via mqtt_publisher.py, the Local Edition
+#   azure           Azure IoT Hub (cloud edition; needs IOTHUB_CONNECTION_STRING)
+# Both expose the same IoTHubDeviceClient / Message API, so nothing below changes.
+HYDROGROW_TRANSPORT = os.getenv("HYDROGROW_TRANSPORT", "mqtt").strip().lower()
+if HYDROGROW_TRANSPORT == "azure":
+    from azure.iot.device import IoTHubDeviceClient, Message
+elif HYDROGROW_TRANSPORT == "mqtt":
+    from mqtt_publisher import IoTHubDeviceClient, Message
+else:
+    raise SystemExit(f"HYDROGROW_TRANSPORT must be 'mqtt' or 'azure', got {HYDROGROW_TRANSPORT!r}")
 
 # ============================================================
 # CONFIG
 # ============================================================
 LOOP_INTERVAL        = 1800     # s  (30 min)
+# --- Timing decoupling (Local Edition). Env-driven; defaults reproduce the original
+#     single 30-min cycle exactly (every stage runs every tick). ---
+SENSOR_INTERVAL_S    = int(os.getenv("SENSOR_INTERVAL_S", LOOP_INTERVAL))  # read + publish
+DOSING_COOLDOWN_S    = int(os.getenv("DOSING_COOLDOWN_S", LOOP_INTERVAL))  # nutrient A/B + water pass
+CAMERA_INTERVAL_S    = int(os.getenv("CAMERA_INTERVAL_S", LOOP_INTERVAL))  # capture + disease inference
+# PUMPS_DRY_RUN=1: every dosing/water decision runs and is published with
+# "dry_run": true, but gpio_write() never touches a relay pin.
+PUMPS_DRY_RUN        = os.getenv("PUMPS_DRY_RUN", "0") == "1"
 PUMP_POLL_INTERVAL   = 1.0      # s
 # --- Water level band (distance to water surface; filling LOWERS the distance) ---
 LEVEL_LOW_DISTANCE   = 3.0      # cm  -> at/above this = water too LOW  -> pump ON
@@ -56,6 +74,7 @@ LEVEL_HIGH_DISTANCE  = 1.5      # cm  -> below this = water too HIGH (overfill f
 PUMP_TIMEOUT         = 300      # s   safety cap on continuous run (5 min - tune after observing real fill time)
 DATA_DIR             = os.getenv("HYDROGROW_DATA_DIR", os.path.expanduser("~"))
 CAPTURE_DIR          = os.path.join(DATA_DIR, "captures")
+DOSING_STATE_FILE    = os.path.join(DATA_DIR, "dosing_state.json")   # last dosing pass (wall clock)
 
 # --- Water level geometry (sensor at top, distance = gap to water surface) ---
 TOTAL_BOX_DEPTH = 11.8    # cm  empty-box baseline distance (confirmed)
@@ -128,7 +147,13 @@ TREATMENT_PCT = 100.0   # nutrient solution strength %
 # We bridge the two in software so the model always receives the "Growth_Day"
 # it expects, while the system tracks true calendar days from a planting date.
 import datetime as _dt
-PLANTING_DATE = _dt.date(2026, 6, 1)   # <-- Day 1. Change to your real sow date.
+_DEFAULT_PLANTING_DATE = _dt.date(2026, 6, 1)   # Day 1 if PLANTING_DATE env is unset
+try:
+    PLANTING_DATE = _dt.date.fromisoformat(os.getenv("PLANTING_DATE", _DEFAULT_PLANTING_DATE.isoformat()))
+except ValueError:
+    print(f"WARNING: PLANTING_DATE={os.getenv('PLANTING_DATE')!r} is not YYYY-MM-DD; "
+          f"using {_DEFAULT_PLANTING_DATE}", flush=True)
+    PLANTING_DATE = _DEFAULT_PLANTING_DATE
 REAL_CYCLE_DAYS  = 40                  # physical crop lifecycle
 MODEL_CYCLE_DAYS = 60                  # lifecycle the ML model was trained on
 
@@ -208,6 +233,9 @@ def utc_now_compact():
 
 def gpio_write(pin, logical_on):
     """Set relay logical ON/OFF, handling active-low boards."""
+    if PUMPS_DRY_RUN:
+        log(f"DRY RUN: relay GPIO{pin} -> {'ON' if logical_on else 'OFF'} (not driven)")
+        return
     if RELAY_ACTIVE_LOW:
         GPIO.output(pin, GPIO.LOW if logical_on else GPIO.HIGH)
     else:
@@ -265,7 +293,7 @@ def init_system():
         camera = None
         log(f"camera init failed ({e}) - continuing without camera")
 
-    # --- Azure IoT Hub ---
+    # --- Telemetry client (connection string is ignored by the MQTT transport) ---
     iot = IoTHubDeviceClient.create_from_connection_string(IOTHUB_CONN)
     iot.connect()
 
@@ -477,15 +505,22 @@ def regulate_water():
     """
     level = read_distance_median()
     if level is None:
+        _note_water_action("no_action")
         return "error", "level sensor fault"
 
     # below the low threshold -> either safe band or overfilled (no pump)
     if level < LEVEL_LOW_DISTANCE:
+        _note_water_action("no_action")
         if level < LEVEL_HIGH_DISTANCE:
             return "error", f"water too high ({level} cm) - overfill"
         return "ok", level                       # in safe band
 
     # level >= 3.0 -> water too low -> fill
+    if PUMPS_DRY_RUN:
+        # Decide only: no pump, no 300 s fill loop. publish() reports the decision.
+        log(f"DRY RUN: water low ({level} cm) -> would top up (pump not driven)")
+        _note_water_action("would_top_up")
+        return "ok", level
     log(f"water low ({level} cm) -> pump ON")
     start = time.time()
     baseline = level          # level when pump started
@@ -788,7 +823,13 @@ def predict_nutrient_status(frame, model_day):
 def publish(frame, image_path, error=None, disease=None, nutrient=None, dosing=None):
     payload = dict(frame)
     payload["image"]  = os.path.basename(image_path) if image_path else None
-    payload["status"] = error if error else "ok"
+    payload["status"] = error if error else ("clock_unsynced" if clock_unsynced() else "ok")
+    if PUMPS_DRY_RUN:
+        global _water_dry_run_action
+        payload["dry_run"] = True
+        if _water_dry_run_action is not None:
+            payload["water_regulation"] = {"dry_run": True, "action": _water_dry_run_action}
+            _water_dry_run_action = None
     payload["disease_predictions"] = disease if disease else {
         "plant1": None, "plant2": None, "plant3": None
     }
@@ -850,6 +891,47 @@ def oled_error(reason):
 def log(msg):
     print(f"[{utc_now_iso()}] {msg}", flush=True)
 
+# --- Dry-run water decision of the current tick (set by regulate_water, consumed by publish) ---
+_water_dry_run_action = None
+
+def _note_water_action(action):
+    global _water_dry_run_action
+    if PUMPS_DRY_RUN:
+        _water_dry_run_action = action
+
+# --- Clock sanity (Pi has no RTC; a cold boot without NTP starts in 1970/2016) ---
+def clock_unsynced():
+    return _dt.date.today().year < 2026
+
+# --- Dosing cooldown state (persisted so a reboot cannot bypass DOSING_COOLDOWN_S) ---
+def load_last_dosing_iso():
+    """Return last dosing pass as ISO string, or None if missing/corrupt (= due now)."""
+    try:
+        with open(DOSING_STATE_FILE) as f:
+            return json.load(f).get("last_dosing_iso")
+    except Exception:
+        return None
+
+def save_last_dosing_iso(iso):
+    try:
+        with open(DOSING_STATE_FILE, "w") as f:
+            json.dump({"last_dosing_iso": iso}, f)
+    except Exception as e:
+        log(f"could not save dosing state: {e}")
+
+def seconds_since_last_dosing():
+    """Wall-clock seconds since the persisted dosing pass, or None if unknown."""
+    iso = load_last_dosing_iso()
+    if not iso:
+        return None
+    try:
+        last = _dt.datetime.fromisoformat(iso)
+        if last.tzinfo is None:
+            last = last.replace(tzinfo=timezone.utc)
+        return max(0.0, (datetime.now(timezone.utc) - last).total_seconds())
+    except (ValueError, TypeError):
+        return None
+
 # --- Nutrient B schedule state (persisted so it survives restarts) ---
 import json as _json
 NUT_B_STATE_FILE = os.path.join(DATA_DIR, "nutrient_b_state.json")
@@ -879,13 +961,42 @@ def enter_error(reason, frame, img_path):
 
 def run_forever():
     init_system()
+
+    # ---- startup report ----
+    if clock_unsynced():
+        log("!!!!! CLOCK UNSYNCED: system date is %s (year < 2026). Growth day, dosing "
+            "schedule and timestamps are unreliable until NTP syncs. Telemetry will "
+            "carry status=clock_unsynced. !!!!!" % _dt.date.today())
+    _a = get_actual_day(); _m = get_model_day(_a)
+    log(f"startup: planting_date={PLANTING_DATE} actual_day={_a} model_day={_m} "
+        f"phase={get_growth_phase(_m)} harvest_flush={_a >= HARVEST_FLUSH_START_DAY}")
+    log(f"startup: intervals sensor={SENSOR_INTERVAL_S}s dosing_cooldown={DOSING_COOLDOWN_S}s "
+        f"camera={CAMERA_INTERVAL_S}s pumps_dry_run={PUMPS_DRY_RUN} "
+        f"transport={HYDROGROW_TRANSPORT}")
+
+    # Cooldown continues across reboots: anchor last_dosing_t to the persisted
+    # wall-clock time. Missing/corrupt file -> None -> first cycle doses (original).
+    last_camera_t = None                        # None -> first cycle runs the camera
+    since = seconds_since_last_dosing()
+    last_dosing_t = None if since is None else time.monotonic() - since
+    if since is not None:
+        log(f"startup: last dosing pass {since:.0f}s ago; next allowed in "
+            f"{max(0.0, DOSING_COOLDOWN_S - since):.0f}s")
+    last_img_path = last_disease = None
     while True:
+        cycle_t = time.monotonic()
+        camera_due = last_camera_t is None or (cycle_t - last_camera_t) >= CAMERA_INTERVAL_S
+        dosing_due = last_dosing_t is None or (cycle_t - last_dosing_t) >= DOSING_COOLDOWN_S
+
         # ---- S2: ACQUIRE (camera + sensors) ----
-        try:
-            img_path = capture_and_store()
-        except Exception as e:
-            img_path = None
-            log(f"camera error: {e}")
+        if camera_due:
+            try:
+                img_path = capture_and_store()
+            except Exception as e:
+                img_path = None
+                log(f"camera error: {e}")
+        else:
+            img_path = last_img_path
         frame = acquire_all()
         log(f"frame: {frame}")
 
@@ -906,9 +1017,14 @@ def run_forever():
         log(f"day: actual {actual_day} -> model {model_day} ({phase})")
 
         # ---- ML: per-plant disease detection ----
-        log("running disease detection on captured image...")
-        disease = analyze_plants(img_path)
-        log(f"disease detection complete: {disease}")
+        if camera_due:
+            log("running disease detection on captured image...")
+            disease = analyze_plants(img_path)
+            log(f"disease detection complete: {disease}")
+            last_camera_t, last_img_path, last_disease = cycle_t, img_path, disease
+        else:
+            disease = last_disease
+            log(f"camera skipped (next in {CAMERA_INTERVAL_S - (cycle_t - last_camera_t):.0f}s); reusing last disease result")
 
         # ---- ML: nutrient deficiency prediction (uses model_day) ----
         log("running nutrient deficiency prediction...")
@@ -927,7 +1043,12 @@ def run_forever():
         # the REAL calendar day (model only sees "Mature" past day 35).
         flushing = actual_day >= HARVEST_FLUSH_START_DAY
 
-        if flushing:
+        if not dosing_due:
+            remaining = DOSING_COOLDOWN_S - (cycle_t - last_dosing_t)
+            log(f"dosing cooldown: {remaining:.0f}s remaining; nutrients + water skipped this tick")
+            dose_a = {"dosed": False, "reason": f"dosing cooldown ({remaining:.0f}s remaining)"}
+            dose_b = {"dosed": False, "reason": f"dosing cooldown ({remaining:.0f}s remaining)"}
+        elif flushing:
             log(f"HARVEST FLUSH (day {actual_day}): nutrient dosing paused")
             dose_a = {"dosed": False, "reason": f"harvest flush (day {actual_day})"}
             dose_b = {"dosed": False, "reason": f"harvest flush (day {actual_day})"}
@@ -947,11 +1068,14 @@ def run_forever():
         # ---- S4c: WATER REGULATION (LAST, after dosing) ----
         # Non-fatal: a fill fault (empty reservoir / weak pump) is warned and
         # the cycle still completes - dosing & ML already ran above.
-        status, info = regulate_water()
         water_status = "ok"
-        if status == "error":
-            water_status = f"water_warning: {info}"
-            log(f"WARNING water regulation: {info} (continuing cycle anyway)")
+        if dosing_due:
+            status, info = regulate_water()
+            if status == "error":
+                water_status = f"water_warning: {info}"
+                log(f"WARNING water regulation: {info} (continuing cycle anyway)")
+            last_dosing_t = cycle_t
+            save_last_dosing_iso(utc_now_iso())
 
         # ---- S5: PUBLISH (sensors + disease + nutrient + dosing) ----
         dosing = {"nutrient_a": dose_a, "nutrient_b": dose_b}
@@ -966,9 +1090,9 @@ def run_forever():
         _sleep_to_next_tick()
 
 def _sleep_to_next_tick():
-    """Sleep the remainder of the 30-min cycle (OLED cycle already consumed ~12.5s)."""
-    log(f"sleeping until next cycle (~{LOOP_INTERVAL//60} min)")
-    time.sleep(LOOP_INTERVAL)
+    """Sleep until the next sensor tick (OLED cycle already consumed ~12.5s)."""
+    log(f"sleeping until next cycle (~{SENSOR_INTERVAL_S} s)")
+    time.sleep(SENSOR_INTERVAL_S)
 
 
 # ============================================================

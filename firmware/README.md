@@ -7,7 +7,8 @@ decisions, OLED status, and telemetry publishing.
 
 | Path | Purpose |
 |---|---|
-| `main.py` | v2.0 control loop, 30-min supervisory cycle: sensors + camera, water-level control, Nutrient A dosing (Random Forest), scheduled Nutrient B, MobileNetV2 disease check, IoT Hub publish with disk buffer, OLED status |
+| `main.py` | v2.0 control loop, 30-min supervisory cycle: sensors + camera, water-level control, Nutrient A dosing (Random Forest), scheduled Nutrient B, MobileNetV2 disease check, telemetry publish, OLED status |
+| `mqtt_publisher.py` | MQTT transport for the Local Edition: same `IoTHubDeviceClient` / `Message` API as `azure.iot.device`, QoS 1, on-disk queue so readings survive broker restarts and reboots |
 | `inference/nutrient.py` | Loads the Random Forest model, derives NPK estimates, returns label + confidence |
 | `config/settings.example.yaml` | Pins, thresholds, calibration, growth phases |
 | `config/crop_boxes.yaml` | Per-plant camera ROI boxes for the 3-plant single-camera setup |
@@ -20,7 +21,7 @@ decisions, OLED status, and telemetry publishing.
 
 | Task | Interval |
 |---|---|
-| Supervisory cycle (sensors, camera, ML, dosing, water, publish, OLED) | 30 min (`LOOP_INTERVAL = 1800`) |
+| Supervisory cycle (sensors, camera, ML, dosing, water, publish, OLED) | 30 min (`LOOP_INTERVAL = 1800`) by default |
 | Water pump poll while filling | 1 s |
 | Water pump continuous-run cap | 300 s (`PUMP_TIMEOUT`) |
 | OLED status rotation (pH, temp/humidity, water) | ~12.5 s, once per cycle |
@@ -28,7 +29,20 @@ decisions, OLED status, and telemetry publishing.
 Each cycle runs in a fixed order: acquire, validate, growth-day mapping, disease
 check, nutrient prediction, Nutrient A, Nutrient B, water top-up, publish, OLED.
 Nutrients are dosed before water so the top-up absorbs the added volume instead of
-overfilling. Failed IoT Hub publishes are buffered to `$HYDROGROW_DATA_DIR/buffer/`.
+overfilling. Failed IoT Hub publishes are buffered to `$HYDROGROW_DATA_DIR/buffer/`;
+with the MQTT transport every reading is queued in `$HYDROGROW_DATA_DIR/mqtt_queue/`
+until the broker acknowledges it.
+
+The Local Edition can split the cycle with env vars. Defaults keep the single 30-min
+cycle exactly:
+
+| Variable | Default | Effect |
+|---|---|---|
+| `SENSOR_INTERVAL_S` | 1800 | read sensors and publish |
+| `DOSING_COOLDOWN_S` | 1800 | minimum gap between dosing + water passes, persisted in `dosing_state.json` so a reboot cannot bypass it |
+| `CAMERA_INTERVAL_S` | 1800 | minimum gap between capture + disease inference |
+| `PUMPS_DRY_RUN` | 0 | `1` = make and publish every dosing/water decision, never drive a relay |
+| `PLANTING_DATE` | 2026-06-01 | day 1 of the grow, `YYYY-MM-DD` |
 
 ## Dosing rules
 
@@ -62,8 +76,8 @@ the phase changes. `PUMP_FLOW_ML_S` (1.0 mL/s) is a placeholder: measure your pu
 ## Growth-day mapping (40 to 60 days)
 
 Real lettuce reaches harvest in about 40 days, but the nutrient model was trained
-on a 60-day lifecycle. The loop tracks the real day from `PLANTING_DATE` (set this
-to your sow date in `main.py`) and scales it for the model:
+on a 60-day lifecycle. The loop tracks the real day from `PLANTING_DATE` (set the
+`PLANTING_DATE` env var to your sow date) and scales it for the model:
 `model_day = round(actual_day * 1.5)`, clamped to 1..60. Phases on the model scale:
 Germination 1-7, Seedling 8-14, Vegetative 15-35, Mature 36-52, Harvest Ready 53-60.
 
@@ -96,13 +110,19 @@ Environment variables:
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `IOTHUB_CONNECTION_STRING` | Yes | Azure IoT Hub device connection string. Startup fails without it. |
-| `HYDROGROW_DATA_DIR` | No (default `~`) | Root for `models/`, `captures/`, `buffer/` and `nutrient_b_state.json` |
+| `HYDROGROW_TRANSPORT` | No (default `mqtt`) | `mqtt` publishes to a local broker (Local Edition). `azure` uses Azure IoT Hub (cloud edition, retired) and needs `azure-iot-device` installed |
+| `MQTT_HOST`, `MQTT_PORT`, `MQTT_TOPIC` | No (`127.0.0.1`, `1883`, `hydrogrow/telemetry`) | Broker for the `mqtt` transport; see `local-edition/.env.example` |
+| `IOTHUB_CONNECTION_STRING` | Only with `azure` | Azure IoT Hub device connection string |
+| `HYDROGROW_DATA_DIR` | No (default `~`) | Root for `models/`, `captures/`, `buffer/`, `mqtt_queue/` and `nutrient_b_state.json` |
 
 ```bash
-export IOTHUB_CONNECTION_STRING="<device connection string from Azure portal>"
 export HYDROGROW_DATA_DIR=/var/lib/hydrogrow
+# cloud edition only:
+# export HYDROGROW_TRANSPORT=azure IOTHUB_CONNECTION_STRING="<device connection string>"
 ```
+
+On a Pi running the Local Edition, `local-edition/setup.sh` installs this loop as the
+`hydrogrow-firmware` systemd service; see `local-edition/docs/START_HERE.md`.
 
 Models are loaded from `$HYDROGROW_DATA_DIR/models/`: `nutrient_model.pkl` and
 `lettuce_mobilenetv2.h5`. If either fails to load, that prediction is disabled and

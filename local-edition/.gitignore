@@ -1,0 +1,7 @@
+# Local Edition runtime state (never commit)
+data/
+.setup/
+dashboard/.stage/
+*.db
+*.db-wal
+*.db-shm

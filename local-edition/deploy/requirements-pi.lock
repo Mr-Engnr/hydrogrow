@@ -1,0 +1,96 @@
+# deploy/requirements-pi.lock
+# Reconstructed 2026-11-06 from the backup of the working Pi (~/iot-env on the old card,
+# Python 3.13.5, aarch64). Every pin below is the exact version that was installed in that
+# venv (site-packages/*.dist-info). Install into a venv created with --system-site-packages:
+#   python3 -m venv --system-site-packages ~/iot-env
+#   ~/iot-env/bin/pip install -r deploy/requirements-pi.lock
+#
+# Resolved cross-platform on 2026-11-06 with: uv pip compile deploy/requirements-pi.lock --python-version 3.13
+#   --python-platform aarch64-unknown-linux-gnu  (no conflicts; see deploy/requirements-pi.resolved.txt)
+# NOT listed on purpose (come from apt, reachable through --system-site-packages):
+#   picamera2, libcamera, pykms, pidng, piexif, simplejpeg, python-prctl, v4l2/videodev2, av
+#   (the old venv had these COPIED into site-packages by hand; the new one just sees the apt ones)
+# Dropped on purpose:
+#   azure-iot-device 2.14.0  (Azure gone)      paho-mqtt 1.6.1 -> 2.1.0 (mqtt_publisher.py needs the v2 API)
+
+# ---- ML stack (TensorFlow 2.21 wheel exists for cp313 aarch64 manylinux) ----
+tensorflow==2.21.0
+keras==3.14.0
+numpy==2.4.4
+scipy==1.17.1
+scikit-learn==1.8.0
+joblib==1.5.3
+threadpoolctl==3.6.0
+h5py==3.14.0
+ml_dtypes==0.5.4
+optree==0.19.0
+absl-py==2.4.0
+astunparse==1.6.3
+flatbuffers==25.9.23   # backup had 24.3.25, but tensorflow 2.21.0 declares flatbuffers>=25.9.23; pip refuses the old pin
+gast==0.7.0
+google_pasta==0.2.0
+grpcio==1.80.0
+libclang==18.1.1
+namex==0.1.0
+opt_einsum==3.4.0
+protobuf==7.34.1
+termcolor==3.3.0
+wrapt==2.1.2
+rich==15.0.0
+markdown-it-py==4.0.0
+mdurl==0.1.2
+pygments==2.20.0
+packaging==26.2
+six==1.17.0
+typing_extensions==4.15.0
+requests==2.33.1
+certifi==2026.4.22
+charset_normalizer==3.4.7
+idna==3.13
+urllib3==2.6.3
+
+# ---- Hardware ----
+RPi.GPIO==0.7.1
+adafruit-blinka==9.1.0
+adafruit-platformdetect==3.88.0
+Adafruit-PureIO==1.1.11
+adafruit-circuitpython-ads1x15==3.0.4
+adafruit-circuitpython-busdevice==5.2.17
+adafruit-circuitpython-connectionmanager==3.1.8
+adafruit-circuitpython-dht==4.0.12
+adafruit-circuitpython-requests==4.1.17
+adafruit-circuitpython-typing==1.12.3
+Adafruit-Blinka-Raspberry-Pi5-Neopixel==1.0.0rc2
+rpi_ws281x==5.0.0
+binho-host-adapter==0.1.6
+pyftdi==0.57.1
+pyusb==1.3.1
+pyserial==3.5
+sysv_ipc==1.2.0
+smbus2==0.6.1
+luma.core==2.5.3
+luma.oled==3.15.0
+pillow==12.2.0
+cbor2==6.1.1
+deprecation==2.1.0
+
+# ---- Messaging (expo) ----
+paho-mqtt==2.1.0
+
+# ---- Build tooling pulled in by tensorflow (setuptools) and astunparse (wheel); pinned to the backup ----
+setuptools==82.0.1
+wheel==0.47.0
+
+# ---- Misc that was present (kept so the environment is byte-for-byte comparable) ----
+janus==2.0.0
+PySocks==1.7.1
+requests-unixsocket2==1.0.1
+
+# ---- Listed in firmware/requirements.txt but absent from the backup venv (main.py does not import it;
+#      kept so the repo's requirements are satisfied) ----
+PyYAML==6.0.2
+
+# Cross-check 2026-11-06: every third-party import in firmware/{main.py,mqtt_publisher.py,inference/nutrient.py}
+# (PIL, RPi, adafruit_ads1x15, adafruit_dht, board, busio, joblib, luma, numpy, paho, tensorflow, picamera2[apt])
+# and every line of firmware/requirements.txt (minus azure-iot-device) maps to a pin above. sklearn is loaded
+# implicitly by joblib for nutrient_model.pkl (scikit-learn==1.8.0, the version the pickle was written with).

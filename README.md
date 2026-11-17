@@ -2,13 +2,15 @@
 
 **A hydroponic lettuce farm that senses, decides, and doses itself.**
 
-Raspberry Pi reads pH, EC, temperature, humidity and water level every 15 seconds.
-Two ML models run on-device: one classifies leaf disease from camera frames, one
-predicts nutrient deficiency from sensor state. The Pi acts on those predictions
-by firing dosing pumps, then streams everything to Azure IoT Hub, a Digital Twin,
-and a live dashboard.
+Raspberry Pi reads pH, EC, temperature, humidity and water level on a supervisory
+loop (30 minutes by default, 30 seconds in the Local Edition). Two ML models run
+on-device: one classifies leaf disease from camera frames, one predicts nutrient
+deficiency from sensor state. The Pi acts on those predictions by firing dosing
+pumps, then streams everything to a Digital Twin and a live dashboard, through
+Azure (cloud edition) or entirely on the Pi (Local Edition).
 
-Built, wired, calibrated, and run on a live grow.
+Built, wired, calibrated, and run on a live grow. Presented at the 10th Pakistan
+Industrial Expo, Nov 2026.
 
 [Architecture](docs/architecture.md) · [Results](docs/results.md) · [Hardware](docs/hardware.md) · [Dosing logic](docs/dosing-logic.md)
 
@@ -16,23 +18,43 @@ Built, wired, calibrated, and run on a live grow.
 
 ## What it does
 
-- **Senses.** Five sensor channels through an ADS1115 ADC and Pi GPIO, sampled on a 15 second loop.
+- **Senses.** Five sensor channels through an ADS1115 ADC and Pi GPIO, sampled once per supervisory cycle.
 - **Decides.** A Random Forest classifier maps live sensor state to a nutrient
   deficiency class. A MobileNetV2 classifier scores three plant regions from a single
   camera frame for bacterial infection and Septoria blight.
 - **Acts.** Three peristaltic pumps dose macronutrients, micronutrients, and water.
   Dosing is gated on EC, model confidence, and growth phase. Nutrients dose before
   water top-up so concentration lands correctly.
-- **Reports.** Telemetry goes Pi to IoT Hub to Azure Function to Blob Storage to
-  Express API to React dashboard, and in parallel into an Azure Digital Twin that a
-  Unity 3D scene mirrors in real time.
+- **Reports.** In the cloud edition, telemetry goes Pi to IoT Hub to Azure Function to
+  Blob Storage to Express API to React dashboard, and in parallel into an Azure Digital
+  Twin that a Unity 3D scene mirrors in real time. The Local Edition replaces the Azure
+  hops with Mosquitto, a Python ingest service and SQLite, and serves the same API and
+  twin documents from the Pi.
 
 The dosing loop is the part that matters. Most hydroponic IoT projects are
 dashboards with sensors attached. This one closes the loop and moves liquid.
 
+## Two ways to run it
+
+| | Cloud edition | Local Edition |
+|---|---|---|
+| Runs on | Azure: IoT Hub, Functions, Blob Storage, Digital Twins, App Service | One Raspberry Pi, or a laptop with a simulated Pi |
+| Status | Retired infrastructure: the subscription is gone; code and runbook kept for reference | Current; used at the expo |
+| Transport | `HYDROGROW_TRANSPORT=azure` (IoT Hub) | `HYDROGROW_TRANSPORT=mqtt` (default, local Mosquitto) |
+| Storage | Blob Storage + Azure Digital Twins | SQLite on the Pi |
+| Needs internet | Always | Only once, to install |
+| Code | `cloud/`, `backend/`, `dashboard/` | `local-edition/` (reuses `firmware/` and `dashboard/`) |
+| Docs | [docs/deployment.md](docs/deployment.md) | [local-edition/docs/START_HERE.md](local-edition/docs/START_HERE.md) |
+
+Both editions run the same `firmware/main.py`, and the Local Edition serves the same
+API shapes and twin documents, so the dashboard and the Unity scene work against either.
+Details: [local-edition/docs/ARCHITECTURE.md](local-edition/docs/ARCHITECTURE.md).
+
 ## Architecture
 
 ![System architecture](media/diagrams/architecture.png)
+
+The diagram and table below show the cloud edition.
 
 | Layer | Stack | Responsibility |
 |---|---|---|
@@ -128,21 +150,74 @@ Per-plant disease and nutrient status over live tank telemetry, mid-session.
 
 ## Quickstart
 
-### Run on a Raspberry Pi
+### Local Edition: Demo Mode on a laptop (no hardware)
+
+Needs Node.js 22 and Python 3.10+. Run each long-running command in its own terminal,
+from the repo root. On Windows, use Git Bash or PowerShell 7: Windows PowerShell 5.1
+(the built-in `powershell.exe`) rejects `&&`, so there run each `&&`-joined part as its
+own line, in order.
+
+```bash
+cp local-edition/.env.example local-edition/.env      # set DEMO_USER_PASSWORD
+python -m pip install -r local-edition/ingest/requirements.txt
+
+cd local-edition/tools && npm ci && npm run broker    # 1: MQTT broker
+python local-edition/ingest/ingest.py                 # 2: MQTT -> SQLite
+cd local-edition/dashboard && npm ci && npm run build && cd ../backend && npm ci && npm start   # 3: dashboard + API on :8080
+python local-edition/tools/fake_pi.py                 # 4: simulated Pi
+```
+
+Open http://localhost:8080/ and log in as `demo@hydrogrow.local` with the
+`DEMO_USER_PASSWORD` you set. The badge reads **Simulated**. `fake_pi.py --scenario low_ec`
+(or `high_ph`, `low_water`, `diseased`, `flaky_dht`) changes the alerts.
+`python local-edition/tools/replay.py <recordings>` (stop `fake_pi.py` first) replays
+recorded readings under a **Demo Mode** badge. No recordings ship with the repo: pass your
+own folder of `YYYYMMDD_HHMMSS_us.json` payloads, a `.jsonl` file or a `.json` list, for
+example the `raw_json` column of the `telemetry` table in a Pi's SQLite database. Full walkthrough:
+[local-edition/docs/START_HERE.md](local-edition/docs/START_HERE.md).
+
+### Local Edition: on a Raspberry Pi
+
+Raspberry Pi 4B, Raspberry Pi OS 64-bit (Debian 13 trixie), the rig wired as in
+[firmware/README.md](firmware/README.md). Internet is needed once.
+
+```bash
+git clone https://github.com/Mr-Engnr/hydrogrow.git
+cd hydrogrow
+sudo bash local-edition/setup.sh
+```
+
+`setup.sh` asks for the planting date and a dashboard password, installs everything
+(pinned Python packages, models with SHA-256 checks, Mosquitto, Node, systemd services),
+reboots once, runs a hardware test and ends with a PASS/FAIL table. Pumps start in dry
+run until you switch them on. Show-day operation and recovery:
+[local-edition/docs/EXPO_RUNBOOK.md](local-edition/docs/EXPO_RUNBOOK.md).
+
+### Demo Mode honesty note
+
+Demo data is simulated (`fake_pi.py`) or replayed from recordings (`replay.py`), and the
+dashboard labels it **Simulated** or **Demo Mode**. Only readings from the real firmware
+show as **Live**, and no setting can change that. The pH probe was unavailable at the
+expo, so pH values shown there were not live probe measurements.
+
+### Cloud edition (retired infrastructure)
+
+Kept for reference; the Azure resources it talks to no longer exist. To run the firmware
+against your own IoT Hub:
 
 ```bash
 git clone https://github.com/Mr-Engnr/hydrogrow.git
 cd hydrogrow
 python -m venv .venv && source .venv/bin/activate
-pip install -r firmware/requirements.txt
+pip install -r firmware/requirements.txt azure-iot-device
 cp firmware/config/settings.example.yaml firmware/config/settings.yaml
 python firmware/tests/test_hardware_full.py  # bring-up: verify each sensor/pump
-python firmware/main.py
+HYDROGROW_TRANSPORT=azure IOTHUB_CONNECTION_STRING="<device connection string>" python firmware/main.py
 ```
 
 Model weights: download the disease model from the [v1.0.0 release](https://github.com/Mr-Engnr/hydrogrow/releases/tag/v1.0.0); see [firmware/README.md](firmware/README.md#running) for the curl command.
 
-### Run the dashboard and API
+Dashboard and API (needs the Azure resources from [docs/deployment.md](docs/deployment.md)):
 
 ```bash
 cp .env.example .env
@@ -155,34 +230,44 @@ Dashboard on http://localhost:3000, API on :8080.
 
 | Path | What lives here |
 |---|---|
-| firmware/ | Pi control loop, sensor drivers, dosing logic, on-device inference |
+| firmware/ | Pi control loop, sensor drivers, dosing logic, on-device inference; MQTT or Azure transport (`HYDROGROW_TRANSPORT`) |
 | ml/ | Training notebooks, trained nutrient model |
-| cloud/ | Azure Functions, Digital Twin models, provisioning scripts |
-| backend/ | Express API and static host |
-| dashboard/ | React SPA |
+| cloud/ | Cloud edition: Azure Functions, Digital Twin models, provisioning scripts |
+| backend/ | Cloud edition: Express API and static host |
+| dashboard/ | React SPA (cloud edition; the Local Edition builds on top of it) |
+| local-edition/ | Local Edition: broker config, ingest, SQLite backend, dashboard overrides, simulators, Pi installer, docs |
 | docs/ | Architecture, hardware, calibration, dosing math, deployment, results |
 | media/ | Photos, diagrams, dashboard and twin captures |
 
 ## Roadmap
 
-- [ ] Hardware-free mock mode for the control loop
+- [x] Hardware-free demo of the full stack: simulated (`fake_pi.py`) and replayed (`replay.py`) telemetry, labeled in the UI
+- [ ] Hardware-free mock mode for the control loop itself (`main.py` still needs the Pi's sensor and camera libraries)
 - [ ] On-device latency benchmarks on Raspberry Pi
 - [ ] Growth-cycle photo timeline from the next grow run
 - [ ] Two-point pH calibration on a scheduled cadence, drift logged as telemetry
 - [ ] Volume-based dosing using measured pump flow rate
 - [ ] Retrain the disease model on images captured by this rig
-- [ ] Persist users in a real database instead of a file store
+- [x] Persist users in a real database instead of a file store (Local Edition: SQLite)
 - [ ] Closed-loop pH correction with an up/down dosing pair
 
 ## Known limits
 
 - Nutrient model trains on simulated data. See the note in Results.
-- Auth is random opaque bearer tokens stored server-side, with a file-backed
-  user store: single-operator grade, not multi-tenant.
+- The control loop runs on a 30-minute supervisory cycle by default. The Local Edition
+  reads sensors every 30 s but still doses at most once per 30 minutes, and runs the
+  camera every 5 minutes.
+- Auth is opaque random bearer tokens stored server-side (not JWT), single-operator
+  grade, not multi-tenant. The cloud edition keeps users in a file; the Local Edition
+  keeps them in SQLite and seeds one demo user from its env file. Registration is still
+  open, so on a shared network anyone who can reach the dashboard can create an account.
+- The Local Edition's MQTT broker and read endpoints are anonymous by design (isolated
+  LAN); [local-edition/docs/ARCHITECTURE.md](local-edition/docs/ARCHITECTURE.md) says how to lock them down.
 - Dosing is time-based; accuracy depends on pump flow staying stable.
 - The original Azure deployment ran on a now-retired subscription. Everything is
   reproducible on any subscription following the runbook in
-  [docs/deployment.md](docs/deployment.md); media/ shows the system live.
+  [docs/deployment.md](docs/deployment.md); media/ shows the system live. The Local
+  Edition needs no subscription.
 
 ## Credits
 
