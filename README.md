@@ -153,7 +153,9 @@ Per-plant disease and nutrient status over live tank telemetry, mid-session.
 ### Local Edition: Demo Mode on a laptop (no hardware)
 
 Needs Node.js 22 and Python 3.10+. Run each long-running command in its own terminal,
-from the repo root.
+from the repo root. On Windows, use Git Bash or PowerShell 7: Windows PowerShell 5.1
+(the built-in `powershell.exe`) rejects `&&`, so there run each `&&`-joined part as its
+own line, in order.
 
 ```bash
 cp local-edition/.env.example local-edition/.env      # set DEMO_USER_PASSWORD
@@ -165,10 +167,13 @@ cd local-edition/dashboard && npm ci && npm run build && cd ../backend && npm ci
 python local-edition/tools/fake_pi.py                 # 4: simulated Pi
 ```
 
-Open http://localhost:8080/ and log in as `demo@hydrogrow.local`. The badge reads
-**Simulated**. `fake_pi.py --scenario low_ec` (or `high_ph`, `low_water`, `diseased`,
-`flaky_dht`) changes the alerts; `local-edition/tools/replay.py <recordings>` replays
-recorded readings under a **Demo Mode** badge. Full walkthrough:
+Open http://localhost:8080/ and log in as `demo@hydrogrow.local` with the
+`DEMO_USER_PASSWORD` you set. The badge reads **Simulated**. `fake_pi.py --scenario low_ec`
+(or `high_ph`, `low_water`, `diseased`, `flaky_dht`) changes the alerts.
+`python local-edition/tools/replay.py <recordings>` (stop `fake_pi.py` first) replays
+recorded readings under a **Demo Mode** badge. No recordings ship with the repo: pass your
+own folder of `YYYYMMDD_HHMMSS_us.json` payloads, a `.jsonl` file or a `.json` list, for
+example the `raw_json` column of the `telemetry` table in a Pi's SQLite database. Full walkthrough:
 [local-edition/docs/START_HERE.md](local-edition/docs/START_HERE.md).
 
 ### Local Edition: on a Raspberry Pi
