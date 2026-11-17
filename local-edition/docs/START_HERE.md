@@ -5,7 +5,9 @@ Two ways in. Try Demo Mode on a laptop first; it needs no hardware.
 ## A. Demo Mode on a laptop (about 10 minutes)
 
 Needs Node.js 22 and Python 3.10 or newer. Windows, macOS and Linux all work. Run each
-long-lived process in its own terminal, from the repo root.
+long-lived process in its own terminal, from the repo root. On Windows, use Git Bash or
+PowerShell 7: Windows PowerShell 5.1 (the built-in `powershell.exe`) rejects `&&`, so there
+run each `&&`-joined part as its own line, in order.
 
 ```bash
 cd local-edition
@@ -27,8 +29,9 @@ Things to try:
 
 - `python local-edition/tools/fake_pi.py --scenario low_ec` (also `high_ph`, `low_water`,
   `diseased`, `flaky_dht`) to see the alerts change.
-- `python local-edition/tools/replay.py <folder-or-jsonl>` to re-publish recorded readings;
-  the badge says **Demo Mode**.
+- `python local-edition/tools/replay.py <folder-or-jsonl>` (stop `fake_pi.py` first) to
+  re-publish recorded readings; the badge says **Demo Mode**. No recordings ship with the
+  repo; use your own, for example the `raw_json` column of `telemetry` in a Pi's database.
 - Stop `fake_pi.py` and watch "Last updated" turn amber.
 - `curl http://localhost:8080/health` and `curl http://localhost:8080/twins/watertank1`.
 
